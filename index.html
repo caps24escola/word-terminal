@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROOT_TERMINAL: VERB_CRACK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&display=swap');
+
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --dim-color: #666666;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            overflow: hidden;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .terminal-container {
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            border: 1px solid var(--text-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: scan 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            from { top: 0; }
+            to { top: 100%; }
+        }
+
+        #history {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            scrollbar-width: none;
+        }
+
+        #history::-webkit-scrollbar {
+            display: none;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+        }
+
+        #user-input {
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-family: 'Fira Code', monospace;
+            font-size: 1.2rem;
+            width: 100%;
+            outline: none;
+        }
+
+        .timer-bar {
+            height: 4px;
+            background: var(--text-color);
+            transition: width 0.1s linear;
+        }
+
+        .status-line {
+            border-bottom: 1px solid var(--dim-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .prompt-text {
+            color: var(--text-color);
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        .error { color: #ffffff; text-decoration: underline; }
+        .success { font-weight: bold; }
+        .dim { color: var(--dim-color); }
+    </style>
+</head>
+<body>
+
+    <div class="crt-overlay"></div>
+    
+    <div class="terminal-container">
+        <div class="scanline"></div>
+        
+        <div class="status-line">
+            <span>KERNEL: v1.0.5-STABLE</span>
+            <span id="score-display">PONTOS: 0000</span>
+            <span id="high-score-display">MAX: 0000</span>
+        </div>
+
+        <div id="history">
+            <div class="dim">SISTEMA INICIALIZADO...</div>
+            <div class="dim">AGUARDANDO ENTRADA DE COMANDO...</div>
+            <br>
+            <div>[!] BEM-VINDO AO VERB_CRACK</div>
+            <div>[!] REGRAS: DIGITE UMA PALAVRA QUE CONTENHA O SEGMENTO ABAIXO.</div>
+            <div>[!] ACENTUAÇÃO OPCIONAL ATIVADA.</div>
+            <div>[!] APERTE 'ENTER' PARA COMEÇAR O DESAFIO.</div>
+            <br>
+        </div>
+
+        <div id="game-ui" class="hidden">
+            <div id="target-segment" class="text-4xl mb-2 font-bold tracking-widest text-center">---</div>
+            <div class="w-full bg-neutral-900 h-1 mb-6">
+                <div id="timer-bar" class="timer-bar" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <span class="prompt-text">root@user:~#</span>
+            <input type="text" id="user-input" autofocus autocomplete="off">
+        </div>
+    </div>
+
+    <script>
+        const history = document.getElementById('history');
+        const input = document.getElementById('user-input');
+        const targetDisplay = document.getElementById('target-segment');
+        const timerBar = document.getElementById('timer-bar');
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const gameUI = document.getElementById('game-ui');
+
+        let score = 0;
+        let highScore = localStorage.getItem('verb_crack_high') || 0;
+        let timeLeft = 100;
+        let timerInterval = null;
+        let currentSegment = "";
+        let isPlaying = false;
+        let usedWords = new Set();
+        let difficulty = 6000; // ms
+
+        highScoreDisplay.textContent = `MAX: ${highScore.toString().padStart(4, '0')}`;
+
+        const segments = [
+            "AR", "ENT", "ÇÃO", "TER", "PRO", "CON", "DES", "EST", "ICA", "ADO",
+            "TRA", "RES", "INA", "MAR", "CIO", "DOR", "VER", "LIZ", "POR", "MENT",
+            "ANC", "QUI", "GUE", "OSS", "NH", "LH", "RR", "SS", "ACE", "IVE"
+        ];
+
+        // Função para remover acentos e caracteres especiais
+        function normalizeText(text) {
+            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        function log(text, className = "") {
+            const line = document.createElement('div');
+            line.className = className;
+            line.innerHTML = text;
+            history.appendChild(line);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function generateSegment() {
+            return segments[Math.floor(Math.random() * segments.length)];
+        }
+
+        async function checkWord(word, segment) {
+            const normalizedWord = normalizeText(word);
+            const normalizedSegment = normalizeText(segment);
+
+            if (normalizedWord.length < 3) return { valid: false, msg: "CURTA_DEMAIS" };
+            if (usedWords.has(normalizedWord)) return { valid: false, msg: "JÁ_UTILIZADA" };
+            if (!normalizedWord.includes(normalizedSegment)) return { valid: false, msg: "SEGMENTO_AUSENTE" };
+
+            // Verificação de estrutura mínima (pelo menos uma vogal)
+            const vowels = normalizedWord.match(/[aeiou]/gi);
+            if (!vowels) return { valid: false, msg: "INVÁLIDA" };
+
+            return { valid: true, id: normalizedWord };
+        }
+
+        function startGame() {
+            score = 0;
+            updateScore();
+            usedWords.clear();
+            isPlaying = true;
+            gameUI.classList.remove('hidden');
+            nextTurn();
+        }
+
+        function nextTurn() {
+            currentSegment = generateSegment();
+            targetDisplay.textContent = currentSegment;
+            input.value = "";
+            timeLeft = 100;
+            
+            const currentSpeed = Math.max(2000, difficulty - (score * 50));
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft -= 1.5;
+                timerBar.style.width = timeLeft + "%";
+                
+                if (timeLeft <= 0) {
+                    gameOver();
+                }
+            }, currentSpeed / 60);
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `PONTOS: ${score.toString().padStart(4, '0')}`;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('verb_crack_high', highScore);
+                highScoreDisplay.textContent = `MAX: ${highScore.toString().padStart(4, '0')}`;
+            }
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            gameUI.classList.add('hidden');
+            log("<br>> [!] SISTEMA FALHOU: TEMPO ESGOTADO.");
+            log(`> [!] SCORE FINAL: ${score}`);
+            log("> [!] PRESSIONE 'ENTER' PARA REINICIAR.");
+            input.value = "";
+        }
+
+        input.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const rawVal = input.value.trim();
+                const displayVal = rawVal.toUpperCase();
+                
+                if (!isPlaying) {
+                    history.innerHTML = "";
+                    log("REINICIALIZANDO SUBSISTEMAS...");
+                    setTimeout(startGame, 500);
+                    return;
+                }
+
+                const result = await checkWord(rawVal, currentSegment);
+
+                if (result.valid) {
+                    score += 10;
+                    updateScore();
+                    usedWords.add(result.id);
+                    log(`> ${displayVal}: OK.`, "success");
+                    nextTurn();
+                } else {
+                    log(`> ${displayVal || '---'}: ERRO_${result.msg}`, "error");
+                    input.value = "";
+                }
+            }
+        });
+
+        document.addEventListener('click', () => input.focus());
+        
+        window.onload = () => {
+            log("> CONEXÃO ESTABELECIDA COM SUCESSO.");
+        };
+
+    </script>
+</body>
+</html>
