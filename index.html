@@ -177,10 +177,30 @@
         highScoreDisplay.textContent = `MAX: ${highScore.toString().padStart(4, '0')}`;
 
         const segments = [
-            "AR", "ENT", "ÇÃO", "TER", "PRO", "CON", "DES", "EST", "ICA", "ADO",
-            "TRA", "RES", "INA", "MAR", "CIO", "DOR", "VER", "LIZ", "POR", "MENT",
-            "ANC", "QUI", "GUE", "OSS", "NH", "LH", "RR", "SS", "ACE", "IVE"
-        ];
+    // --- CLÁSSICOS & ORIGINAIS ---
+    "AR", "ENT", "ÇÃO", "TER", "PRO", "CON", "DES", "EST", "ICA", "ADO",
+    "TRA", "RES", "INA", "MAR", "CIO", "DOR", "VER", "LIZ", "POR", "MENT",
+    "ANC", "QUI", "GUE", "OSS", "NH", "LH", "RR", "SS", "ACE", "IVE",
+
+    // --- PREFIXOS E RADICAIS (ESTILO TECH/ROOT) ---
+    "CYBER", "BIO", "AUTO", "TECH", "HYPER", "NEO", "MACRO", "MICRO", "DATA", "CRYPT",
+    "SYNC", "LINK", "CODE", "SYS", "NET", "CORE", "HEX", "BIT", "VIRT", "META",
+    "TELE", "GEO", "FOTO", "CRONO", "TERMO", "HIDRO", "AERO", "PSICO", "NEURO", "INFRA",
+
+    // --- TERMINAÇÕES COMPLEXAS (PORTUGUÊS) ---
+    "AGEM", "ÁVEL", "ÍVEL", "MUNDO", "DADE", "TUDE", "URA", "ISMO", "ISTA", "ÍSTICO",
+    "SÃO", "XÃO", "ZINHO", "ALDO", "ENTE", "MENTO", "ANÇA", "ENÇA", "DROMO", "GIA",
+    "VORO", "CÍDIO", "FORME", "GRAFIA", "METRO", "NOMIA", "SCOPIO", "SFERA", "LOGIA",
+
+    // --- SÍLABAS DE ALTA DIFICULDADE (HARD MODE) ---
+    "PTE", "GNO", "PSI", "OBS", "SUB", "ADJ", "ABS", "TRANS", "INSC", "AFT",
+    "EIT", "OIT", "UIR", "OIR", "UAN", "QUER", "XER", "CH", "SCR", "THR",
+    "PH", "RH", "TH", "Y", "W", "K", "EU", "OU", "AI", "EI",
+
+    // --- ENCONTROS CONSONANTAIS VARIADOS ---
+    "BLA", "CLI", "FLO", "GLU", "PLI", "TLU", "BRA", "CRE", "DRI", "FRO",
+    "GRU", "PRU", "TRE", "VRA", "QUE", "QUI", "GUA", "GUI", "NHA", "LHO"
+];
 
         // Função para remover acentos e caracteres especiais
         function normalizeText(text) {
